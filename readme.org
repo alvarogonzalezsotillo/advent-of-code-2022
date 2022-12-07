@@ -1,6 +1,6 @@
 This is my code for the [[https://adventofcode.com/2022][advent of code 2022]]
 
-The code can be run with [[https://ammonite.io/][ammonite]], a script runner for Scala. I prefer ammonite over scala+sbt for the simplicity of installation and execution.
+The code can be run with [[https://ammonite.io/][ammonite]], a script runner for [[https://www.scala-lang.org/][Scala]]. I prefer ammonite over scala+sbt for the simplicity of installation and execution.
 
 You can install ammonite with:
 
