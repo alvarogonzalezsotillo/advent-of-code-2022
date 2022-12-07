@@ -1,0 +1,9 @@
+This is my code for the [[https://adventofcode.com/2022][advent of code 2022]]
+
+The code can be run with [[https://ammonite.io/][ammonite]], a script runner for Scala. I prefer ammonite over scala+sbt for the simplicity of installation and execution.
+
+You can install ammonite with:
+
+#+begin_src sh
+sudo sh -c '(echo "#!/usr/bin/env sh" && curl -L https://github.com/com-lihaoyi/Ammonite/releases/download/2.5.5/2.13-2.5.5) > /usr/local/bin/amm && chmod +x /usr/local/bin/amm' && amm
+#+end_src
