@@ -17,4 +17,5 @@ sudo sh -c '(echo "#!/usr/bin/env sh" && curl -L https://github.com/com-lihaoyi/
 
 
 Other participants:
-- [[https://github.com/lantoli/AdventOfCode/tree/master/2022_ts][https://github.com/lantoli/AdventOfCode/tree/master/2022_ts]]
+- [[https://github.com/lantoli/AdventOfCode/tree/master/2022_ts][https://github.com/lantoli/AdventOfCode
+- https://github.com/dirigity/AdventOfCode2022
