@@ -93,19 +93,17 @@ def process(movements: Iterator[Location], numberOfKnots: Int ) = {
     //dump(head, tail, visited )
   }
 
-  println( s"Solution: ${visited.size}")
-
   visited.size
 }
 
 {
   val lines = LineIterator.lineIterator( new FileInputStream("input") )
   val movements = parseMovements(lines)
-  process( movements, 1 ) // 5883
+  println( "Solution 1:" + process( movements, 1 ) )// 5883
 }
 {
   val lines = LineIterator.lineIterator( new FileInputStream("input") )
   val movements = parseMovements(lines)
-  process( movements, 9 ) // 2367
+  println( "Solution 2:" + process( movements, 9 ) )// 2367
 }
 
