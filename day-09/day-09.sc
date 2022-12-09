@@ -17,8 +17,7 @@ case class Location(x: Int, y: Int){
   def +(l:Location) = Location(x + l.x, y + l.y)
   def norm : Location = Location( signum(x), signum(y) )
   def components = Seq( Location(x,0).norm, Location(0,y).norm )
-  def asSeq = Seq(x,y)
-  def nextTo(l:Location) = (this-l).asSeq.forall(c=>abs(c)<=1)
+  def nextTo(l:Location) = abs(x-l.x) <= 1 && abs(y-l.y) <= 1
 }
 
 
@@ -30,17 +29,23 @@ def parseMovements(it: Iterator[String]) : Iterator[Location]= {
   it.flatMap{ case movement(dir,size) => Array.fill(size.toInt)( vector(dir) ) }
 }
 
-val lines = LineIterator.lineIterator( new FileInputStream("input") )
-val movements = parseMovements(lines)
+
+def follow( head: Location, tail: Location ) : Location = {
+  var newTail = tail
+
+  if( !head.nextTo(newTail) ){
+    (head - newTail).components.foreach{ c =>
+      if( newTail + c != head ){
+        newTail = newTail + c
+      }
+    }
+  }
+
+  newTail
+}
 
 
-var head = Location(0,0)
-var tail = Location(0,0)
-val visited = MSet[Location]()
-visited += tail
-
-
-def dump(){
+def dump(head:Location, tail:Array[Location], visited: MSet[Location] ){
   val xmin = visited.map(_.x).min min head.x
   val xmax = visited.map(_.x).max max head.x
   val ymin = visited.map(_.y).min min head.y
@@ -56,8 +61,9 @@ def dump(){
       if( l == head ){
         print("H")
       }
-      else if( l == tail ){
-        print("T")
+      else if( tail.contains(l) ){
+        val index = tail.indexOf(l)
+        print(index+1)
       }
       else if( visited.contains(l) ){
         print("#")
@@ -71,36 +77,35 @@ def dump(){
   println()
 }
 
+def process(movements: Iterator[Location], numberOfKnots: Int ) = {
+  var head = Location(0,0)
+  var tail = Array.fill(numberOfKnots)( Location(0,0) )
+  val visited = MSet[Location]()
+  visited += tail.last
 
-for( m <- movements){
-  head = head + m
-  //println( s"Head: $head  Tail:$tail nexto:${head.nextTo(tail)}")
-  //println( s"  Delta: $delta")
-  if( !head.nextTo(tail) ){
-    val delta = head - tail
-    delta.components.foreach{ c =>
-      //println( s"  c: $c")
-      if( tail + c != head ){
-        tail = tail + c
-        //println( s"  tail: $tail")
-      }
+  for( m <- movements){
+    head = head + m
+    tail(0) = follow(head,tail(0))
+    for( t <- 1 until tail.size ){
+      tail(t) = follow(tail(t-1),tail(t))
     }
+    visited += tail.last
+    //dump(head, tail, visited )
   }
-  visited += tail
-  //dump()
+
+  println( s"Solution: ${visited.size}")
+
+  visited.size
 }
 
-println( visited )
-println( s"Solution: ${visited.size}")
+{
+  val lines = LineIterator.lineIterator( new FileInputStream("input") )
+  val movements = parseMovements(lines)
+  process( movements, 1 ) // 5883
+}
+{
+  val lines = LineIterator.lineIterator( new FileInputStream("input") )
+  val movements = parseMovements(lines)
+  process( movements, 9 ) // 2367
+}
 
-assert( Location(1,1) == Location(1,1) )
-
-/*
-     _                         _                
- ___(_)_ __     __ _  ___ __ _| |__   __ _ _ __ 
-/ __| | '_ \   / _` |/ __/ _` | '_ \ / _` | '__|
-\__ \ | | | | | (_| | (_| (_| | |_) | (_| | |   
-|___/_|_| |_|  \__,_|\___\__,_|_.__/ \__,_|_|   
-                                                
-
- */
