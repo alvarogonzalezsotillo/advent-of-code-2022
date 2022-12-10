@@ -16,7 +16,9 @@ case class Range(start:Int, end:Int){
 }
 
 def fullyContained(r1: Range, r2: Range) = {
-  r1.intersection(r2).map( r => Seq(r1.size,r2.size).contains( r.size ) ).getOrElse(false)
+  r1.intersection(r2).
+    map( r => Seq(r1.size,r2.size).contains( r.size ) ).
+    getOrElse(false)
 }
 
 
