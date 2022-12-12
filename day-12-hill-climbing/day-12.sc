@@ -38,7 +38,7 @@ def find(char:Char)( implicit h: Hill) = {
 
 
 
-def search(start:Position,goal:Position)(implicit h: Hill) : Option[Map[Position,Position]] = {
+def search(start:Position,goal:Position, neighbourP : (Position,Position)=> Boolean )(implicit h: Hill) : Option[Map[Position,Position]] = {
 
   val toVisit = Queue[Position](start)
   val parents = MMap[Position,Position]()
@@ -48,7 +48,7 @@ def search(start:Position,goal:Position)(implicit h: Hill) : Option[Map[Position
   while( !toVisit.isEmpty ){
     val p = toVisit.dequeue
 
-    val neighbours = p.neighbours.filter(_.value <= p.value + 1)
+    val neighbours = p.neighbours.filter( neighbourP(p,_) )
 
     for( n <- neighbours if !parents.isDefinedAt(n) && !parents.isDefinedAt(goal) ){
       parents(n) = p
@@ -67,7 +67,8 @@ def search(start:Position,goal:Position)(implicit h: Hill) : Option[Map[Position
   val lines = LineIterator.lineIterator( new FileInputStream("input") )
   implicit val hill : Hill = lines.map( _.toSeq ).toSeq
 
-  val parents = search(start,goal).get
+  val parents = search(start,goal, (from,to)=>to.value <= from.value + 1).get
   val solution = Iterator.iterate(goal)( (p)=>parents(p) ).takeWhile( _ != start )
   println( solution.size ) // 534
 }
+
