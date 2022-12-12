@@ -38,35 +38,36 @@ def find(char:Char)( implicit h: Hill) = {
 
 
 
-def search(implicit h: Hill) : Iterator[Position] = {
+def search(start:Position,goal:Position)(implicit h: Hill) : Option[Map[Position,Position]] = {
 
-  val goalV = goal
-  val startV = start
-  val toVisit = Queue[Position](startV)
+  val toVisit = Queue[Position](start)
   val parents = MMap[Position,Position]()
 
-  parents(startV) = startV
+  parents(start) = start
 
   while( !toVisit.isEmpty ){
     val p = toVisit.dequeue
 
     val neighbours = p.neighbours.filter(_.value <= p.value + 1)
 
-    for( n <- neighbours if !parents.isDefinedAt(n) && !parents.isDefinedAt(goalV) ){
+    for( n <- neighbours if !parents.isDefinedAt(n) && !parents.isDefinedAt(goal) ){
       parents(n) = p
       toVisit += n
     }
 
-    if( parents.isDefinedAt(goalV) ){
-      return Iterator.iterate(goalV)( (p)=>parents(p) ).takeWhile( _ != startV )
+    if( parents.isDefinedAt(goal) ){
+      return Some(parents.toMap)
     }
   }
 
-  return Iterator()
+  return None
 }
 
+{
+  val lines = LineIterator.lineIterator( new FileInputStream("input") )
+  implicit val hill : Hill = lines.map( _.toSeq ).toSeq
 
-val lines = LineIterator.lineIterator( new FileInputStream("input") )
-val hill : Hill = lines.map( _.toSeq ).toSeq
-
-println( search(hill).size )
+  val parents = search(start,goal).get
+  val solution = Iterator.iterate(goal)( (p)=>parents(p) ).takeWhile( _ != start )
+  println( solution.size ) // 534
+}
