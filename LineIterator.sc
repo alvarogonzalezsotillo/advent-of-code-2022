@@ -1,5 +1,15 @@
+// -*- mode: scala;coding:utf-8 -*-
+
 import java.io._
 import scala.util._
+
+def time[A](name: String)( proc : => A ) = {
+  val ini = System.currentTimeMillis()
+  val ret = proc
+  val end = System.currentTimeMillis()
+  print( s"$name: ${end-ini} millis" )
+  ret
+}
 
 
 def lineIterator( inStream : InputStream ) = new Iterator[String](){
