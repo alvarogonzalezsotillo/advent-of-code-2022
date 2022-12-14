@@ -33,7 +33,6 @@ object parser{
 }
 
 def compare( s1: AList, s2: AList ) : Int = {
-
   @tailrec
   def compare_( s1: AList, s2: AList ) : Int = {
     val ret = (s1.headOption, s2.headOption ) match{
@@ -51,8 +50,6 @@ def compare( s1: AList, s2: AList ) : Int = {
   compare_(s1,s2)
 }
 
-
-
 val lines = LineIterator.lineIterator( new FileInputStream("input") )
 
 val pairs = lines.dropWhile(_.trim == "").
@@ -66,3 +63,12 @@ val solution = pairs.map( p => compare(p(0),p(1)) ).
   map( _._2+1 )
 
 println( "Solution 1: " + solution.sum) // 5350
+
+val packets = pairs.
+  flatten(_.asInstanceOf[IterableOnce[Seq[AList]]])
+  // ⚠️ Scala get lost with Any and type inference
+
+val aditionalPackets = List( parser("[[2]]"), parser("[[6]]") )
+val packetsSorted = (packets ++ aditionalPackets).sortWith( compare(_,_) < 0 )
+val indexes = aditionalPackets.map( p => packetsSorted.indexOf(p)+1 )
+println( "Solution 2: " + indexes.product ) // 19570
