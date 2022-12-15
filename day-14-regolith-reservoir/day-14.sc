@@ -23,6 +23,8 @@ case class Location(x:Numero,y:Numero){
   }
 }
 
+type Path = Seq[Location]
+
 case class Cave( paths: Seq[Path], dropLocation:Location ){
   val allLocations = paths.flatten :+ dropLocation
   val minx = allLocations.map(_.x).min
@@ -43,9 +45,7 @@ case class Cave( paths: Seq[Path], dropLocation:Location ){
     if( inRange(l) ) array(l.x-minx)(l.y-miny) = c else ()
   }
 
-  def update(l:Location,c:Char) = set(l,c)
-
-  def addPath( path: Seq[Location] ) = {
+  def addPath( path: Path ) = {
     path.
       zip(path.tail).
       foreach{ case (l1,l2) =>
@@ -79,9 +79,14 @@ case class Cave( paths: Seq[Path], dropLocation:Location ){
       }
     }.takeWhile(_.isDefined).map(_.get).takeWhile(_.y<=maxy+1).toList.last
   }
+
+  def fill() = Iterator.iterate(computeFinalDrop()){ l =>
+    val next = computeFinalDrop()
+    set(next,'o')
+    next
+  }
 }
 
-type Path = IndexedSeq[Location]
 
 def toPath(line: String) : Path = {
   line.
@@ -95,17 +100,17 @@ val paths = lines.filter(_.trim != "").map(toPath).toIndexedSeq
 
 
 val cave = Cave(paths, Location(500,0))
-
-
+val it = cave.fill().takeWhile(_.y <= cave.maxy)
+println( "Solution 1:" + (it.size-1) ) // 618
 cave.dump()
 
-val it = Iterator.iterate(cave.computeFinalDrop()){ l =>
-  val next = cave.computeFinalDrop()
-  cave(next) = 'o'
-  next
-}.takeWhile(_.y <= cave.maxy)
 
-println( "Solution 1:" + (it.size-1) ) // 618
+val extra = 150
+val cave2 = Cave(paths :+ Seq( Location(cave.minx-extra,cave.maxy+2), Location(cave.maxx+extra,cave.maxy+2) ), Location(500,0))
+val it2 = cave2.fill().takeWhile( _ != Location(500,0))
+println( "Solution 2:" + it2.size ) // 26358
+cave2.dump()
+
 
 
 
