@@ -5,6 +5,7 @@ import scala.util._
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Queue
+import scala.collection.mutable.SortedSet
 import scala.collection.mutable.{Set => MSet,Map => MMap}
 import $file.^.LineIterator
 
@@ -21,49 +22,70 @@ case class Location(x:Numero,y:Numero){
 
 case class Range(minv: Numero, maxv:Numero){
   def iterator = (minv to maxv)
-  def overlap(r:Range) = (minv max r.minv, maxv min r.maxv) match{
-    case (mi,ma) if( mi <= ma ) =>  Some(Range(mi,ma))
-    case _ => None
-  }
-  def union(r:Range) = overlap(r) match{
-    case Some(_) => Some(Range( minv min r.minv, maxv max r.maxv))
-    case None => None
-  }
+  def overlaps(r:Range) = (minv max r.minv) <= (maxv min r.maxv)
+  def overlapNoCheck(r:Range) = Range(minv max r.minv, maxv min r.maxv)
+  def unionNoCheck(r:Range) = Range(minv min r.minv, maxv max r.maxv)
   def contains(i:Numero) = i >= minv && i <= maxv
   val size = maxv - minv + 1
 }
 
+implicit val rangeOrdering = new Ordering[Range]{
+    def compare(r1:Range,r2:Range) = (r1.minv - r2.minv).signum
+}
+
 class Ranges{
-  val ranges = MSet[Range]()
+
+  val ranges = SortedSet[Range]()
 
   def contains(i:Numero) = ranges.exists( _.contains(i) )
   def size = ranges.map(_.size).sum
 
-  def addRange(r:Range) = {
-    val overlaps : Set[(Range,Range)]= ranges.
-      zip( ranges ).
-      map( p=> (p._1, r.overlap(p._1) ) ).
-      filter( _._2.isDefined ).
-      map( pair => (pair._1,pair._2.get)).
-      toSet
+  val addRange = addRangeNonFunctional _
+  val intersection = intersectionNonFunctional _
 
-    if( overlaps.size == 0 ){
-      ranges += r
-    }
-    else{
-      ranges --= overlaps.map(_._1)
-      val toMerge = overlaps.map(_._1) + r
-      val union = Range( toMerge.map(_.minv).min, toMerge.map(_.maxv).max )
-      ranges += union
-    }
+  def addRangeNonFunctional(range:Range) = {
+    var current = range
+    /*
+    for( r <- ranges.iterator.toList ){
+      if( r.overlaps(current) ){
+        current = r.unionNoCheck(current)
+        ranges -= r
+      }
+     }
+     */
+     ranges += current
+     
   }
 
-  def iterator : Iterator[Numero] = ranges.toList.sortBy(_.minv).map( r => (r.minv to r.maxv).iterator ).reduce( _ ++ _ )
+  def intersectionNonFunctional(r:Range,reusableRanges:Ranges=null) : Ranges = {
+    val ret = if( reusableRanges != null ) reusableRanges else new Ranges()
+    ret.ranges.clear
+    val it = ranges.iterator.
+      dropWhile( range => range.maxv < r.minv ).
+      takeWhile( range => range.minv < r.maxv ) 
 
-  def intersect(r:Range) : Ranges = {
-    val newRanges = ranges.map(_.overlap(r)).filter(_.isDefined).map(_.get)
-    val ret = new Ranges()
-    ret.ranges ++= newRanges
+    for( range <- it ){
+      ret.ranges += range.overlapNoCheck(r)
+    }
+    ret
+  }
+
+  def findFirstEmpyPosition(from:Numero, to:Numero) : Option[Numero] = {
+    //println( s"findFirstEmpyPosition: from:$from to:$to")
+    var i = from
+    var ret : Option[Numero] = None
+    for( r <- ranges if ret.isEmpty && i < to ){
+      //println( s"findFirstEmpyPosition: r:$r i:$i")
+      
+      if( i < r.minv ){
+        ret = Some(i)
+        //println( s"findFirstEmpyPosition: found:$ret")
+      }
+      else{
+        i = r.maxv + 1
+        //println( s"findFirstEmpyPosition: avanzo i:$i")
+      }
+    }
     ret
   }
 }
@@ -98,8 +120,9 @@ val sensors = lines.filter(_.trim != "").map(parseLine).toList
 val beacons = sensors.map(_.nearestBeacon).toSet
 
 
-def coveredRange(y:Numero) = {
-  val ranges = new Ranges()
+def coveredRange(y:Numero, reusableRanges: Ranges = null ) = {
+  val ranges = if( reusableRanges == null ) new Ranges else reusableRanges
+  ranges.ranges.clear
   for( ro <- sensors.map(_.rangeAtY(y) ) ; r <- ro ){
     ranges.addRange(r)
   }
@@ -117,19 +140,29 @@ println( "Solution 1: " + solution1 ) // 4737567
 val span = data._3
 
 // ⚠ NO ES SATISFACTORIO: tarda demasiado tiempo (> 5 minutos)
-for( y <- span.iterator.filter( _ >= 2686239) ){
-  val ranges = coveredRange(y).intersect(span)
-  if( y % 1000 == 0 ){
-    println( s"y: $y ranges: ${coveredRange(y).ranges}" )
-  }
-  if( ranges.size != span.size ){
-    println( "Esta en y: " + y ) // 2686239
-    val x = span.iterator.find( x => !ranges.contains(x) ).get
-    println( "ESta en x:" + x ) // 3316868
-    println( "Solution 2:" + (x*4000000+y) ) // 13267474686239
+val ini = System.currentTimeMillis
+val reusableRanges1 = new Ranges()
+val reusableRanges2 = new Ranges()
+LineIterator.time("Parte 2"){
+  var found = false
+  for( y <- span.iterator/*.filter( _ >= 2686239)*/ if !found ){
+    val ranges : Ranges = coveredRange(y,reusableRanges1)
+    val emptyPos = ranges.findFirstEmpyPosition( span.minv, span.maxv )
+    
 
-    System.exit(0)
+    if( y % 10000 == 1 ){
+      val now = System.currentTimeMillis
+      println( s"y: $y ranges: ${coveredRange(y).ranges}" )
+      println( s"time:${now-ini} ${(now.toDouble-ini)/y}")
+    }
+    if( emptyPos.isDefined ){
+      println( "Esta en y: " + y ) // 2686239
+      val x = span.iterator.find( x => !ranges.contains(x) ).get
+      println( "ESta en x:" + x ) // 3316868
+      println( "Solution 2:" + (x*4000000+y) ) // 13267474686239
+
+      found = true
+    }
   }
 }
-
 
