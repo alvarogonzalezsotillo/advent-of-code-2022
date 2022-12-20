@@ -37,6 +37,8 @@ class Chamber(override val name:String, val flow:Numero, val neigbours: Seq[Stri
   override val toString = s"Chamber $name flow=$flow to=${neigbours.mkString(",")}"
   val valve = if( flow > 0 ) Valve(this) else null
 
+  var index : Int = -1
+
   private var _nodeNeigbours : Seq[Node] = null
 
   override def nodeNeigbours(v:Volcano) : Seq[Node] = {
@@ -80,35 +82,56 @@ def toDot(chambers:Seq[Chamber]) = {
 
 class Volcano( chambersSeq: Seq[Chamber] ){
   val chamber = chambersSeq.map( c => (c.name, c) ).toMap
+  chambersSeq.zipWithIndex.foreach{ case (c,i) => c.index = i }
 }
 
-def dfs( volcano: Volcano, start: Node, remainingTime: Int, openedValves: Set[Valve] = Set(), currentFlow:Numero = 0, visitedSinceValveOpened: Seq[Node] = List(), visited: Seq[Node] = List()) : (Numero, Seq[Node]) = {
+var  currentMaxFlow:Numero=0
+
+
+def dfs(
+  volcano: Volcano,
+  start: Node,
+  remainingTime: Int,
+  openedValves: Set[Valve] = Set(),
+  currentFlow:Numero = 0,
+  flowIncrement:Numero=0,
+  visitedSinceValveOpened: Set[Node] = Set(),
+  visited: Seq[Node] = List()
+) : Numero = {
 
   if( remainingTime <= 0 ){
-    //println( s"flow:$currentFlow on:${start.name} Valves: ${openedValves.map(_.name)} visited:${visited.map(_.name)}")
-    return (currentFlow,visited)
+    return currentFlow
   }
 
-  //assert( !start.isInstanceOf[Valve] || !openedValves.contains(start.asInstanceOf[Valve]) )
+  assert( !start.isInstanceOf[Valve] || !inOpenedValves(start.asInstanceOf[Valve]) )
 
+  def inVisitedSinceValveOpened(n:Node) = visitedSinceValveOpened.contains(n)
+  def inOpenedValves(v:Valve) = openedValves.contains(v)
 
   start match{
     case v: Valve => {
       // ABRO LA VALVULA Y VUELVO A LA CAMARA
-      return dfs(volcano, v.chamber, remainingTime, openedValves + v, currentFlow, List(), visited /* :+ v */ )
+      return dfs(volcano, v.chamber, remainingTime, openedValves + v, currentFlow, flowIncrement+v.chamber.flow, Set(), visited /* :+ v */ )
     }
     case c: Chamber =>{
-      val nextFlow = currentFlow + openedValves.map(_.chamber.flow).sum
-      val nextVisitedValve = visitedSinceValveOpened :+c
+      val nextFlow = currentFlow + flowIncrement
+
+      /*
+      if( nextFlow > currentMaxFlow ){
+        println( s"flow:$nextFlow on:${start.name} Valves: ${openedValves.map(_.name)} visited:${visited.map(_.name)}")
+        currentMaxFlow = nextFlow
+      }
+      */
+      val nextVisitedValve = visitedSinceValveOpened + c
       val nextVisited = visited /* :+ c */
-      val search = for( n <- c.nodeNeigbours(volcano).toList if !visitedSinceValveOpened.contains(n) && ( !n.isValve || !openedValves.contains(n.asValve) ) ) yield {
-        dfs(volcano, n, remainingTime-1, openedValves, nextFlow, nextVisitedValve, nextVisited)
+      val search = for( n <- c.nodeNeigbours(volcano).toList if !inVisitedSinceValveOpened(n) && ( !n.isValve || !inOpenedValves(n.asValve) ) ) yield {
+        dfs(volcano, n, remainingTime-1, openedValves, nextFlow, flowIncrement, nextVisitedValve, nextVisited)
       }
       if( search.isEmpty ){
-        return (currentFlow,visited)
+        return currentFlow
       }
       else{
-        return search.maxBy(_._1)
+        return search.max
       }
     }
   }
@@ -121,6 +144,6 @@ val chambers = lines.map( Chamber.fromLine ).toList
 val volcano = new Volcano(chambers)
 
 val solution = LineIterator.time("solution 1"){
-  dfs(volcano, volcano.chamber("AA"), 30)
+  dfs(volcano, volcano.chamber("AA"), 20)
 }
-println(s"Solution 1:${solution._1} ${solution._2.map(_.name)}")
+println(s"Solution 1:${solution}")
