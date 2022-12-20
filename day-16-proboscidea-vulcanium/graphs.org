@@ -1,0 +1,251 @@
+
+
+
+#+begin_src dot :file ./sample.svg :exports results :cmdline -Tsvg
+digraph{
+  AA[label="AA"]
+  BB[label="BB 13"]
+  CC[label="CC 2"]
+  DD[label="DD 20"]
+  EE[label="EE 3"]
+  FF[label="FF"]
+  GG[label="GG"]
+  HH[label="HH 22"]
+  II[label="II"]
+  JJ[label="JJ 21"]
+  AA -> DD
+  AA -> II
+  AA -> BB
+  BB -> CC
+  BB -> AA
+  CC -> DD
+  CC -> BB
+  DD -> CC
+  DD -> AA
+  DD -> EE
+  EE -> FF
+  EE -> DD
+  FF -> EE
+  FF -> GG
+  GG -> FF
+  GG -> HH
+  HH -> GG
+  II -> AA
+  II -> JJ
+  JJ -> II
+}
+#+end_src
+
+#+RESULTS:
+[[file:./sample.svg]]
+
+#+begin_src dot :file ./input.svg :exports results :cmdline -Tsvg
+digraph{
+  EF[label="EF 22"]
+  WT[label="WT"]
+  RQ[label="RQ"]
+  HF[label="HF 17"]
+  ZH[label="ZH"]
+  AV[label="AV"]
+  AH[label="AH 12"]
+  PQ[label="PQ"]
+  DP[label="DP 18"]
+  RU[label="RU 16"]
+  AQ[label="AQ"]
+  KO[label="KO"]
+  EY[label="EY"]
+  RC[label="RC 14"]
+  AA[label="AA"]
+  IH[label="IH"]
+  CK[label="CK"]
+  BG[label="BG"]
+  UJ[label="UJ"]
+  HQ[label="HQ"]
+  XV[label="XV"]
+  BL[label="BL"]
+  YL[label="YL"]
+  RT[label="RT"]
+  MV[label="MV"]
+  WE[label="WE 5"]
+  HN[label="HN"]
+  UR[label="UR"]
+  FK[label="FK"]
+  GE[label="GE"]
+  GX[label="GX"]
+  YC[label="YC"]
+  XR[label="XR"]
+  MS[label="MS"]
+  EO[label="EO"]
+  VQ[label="VQ 9"]
+  DY[label="DY 23"]
+  XJ[label="XJ 24"]
+  RD[label="RD"]
+  ZU[label="ZU"]
+  AF[label="AF"]
+  DR[label="DR"]
+  NZ[label="NZ"]
+  DE[label="DE"]
+  OP[label="OP"]
+  QK[label="QK"]
+  CF[label="CF 20"]
+  FC[label="FC"]
+  KG[label="KG 25"]
+  XE[label="XE 11"]
+  OY[label="OY 7"]
+  OM[label="OM"]
+  QC[label="QC"]
+  DF[label="DF"]
+  KH[label="KH"]
+  SG[label="SG"]
+  VG[label="VG 3"]
+  HT[label="HT"]
+  VJ[label="VJ"]
+  EF -> FK
+  EF -> HT
+  EF -> DE
+  WT -> XJ
+  WT -> XR
+  RQ -> VG
+  RQ -> AV
+  HF -> EO
+  HF -> PQ
+  HF -> GX
+  ZH -> VG
+  ZH -> RU
+  AV -> RQ
+  AV -> VQ
+  AH -> DF
+  AH -> FC
+  AH -> DE
+  AH -> MV
+  AH -> YC
+  PQ -> CF
+  PQ -> HF
+  DP -> RD
+  DP -> OP
+  DP -> DR
+  RU -> ZH
+  RU -> VJ
+  RU -> AQ
+  RU -> SG
+  AQ -> RU
+  AQ -> WE
+  KO -> VQ
+  KO -> HQ
+  EY -> WE
+  EY -> VQ
+  RC -> QK
+  RC -> BL
+  RC -> EO
+  AA -> XV
+  AA -> MS
+  AA -> BG
+  AA -> RT
+  AA -> HQ
+  IH -> VQ
+  IH -> VJ
+  CK -> SG
+  CK -> KG
+  BG -> DY
+  BG -> AA
+  UJ -> AF
+  UJ -> OY
+  HQ -> AA
+  HQ -> KO
+  XV -> AA
+  XV -> YL
+  BL -> DY
+  BL -> RC
+  YL -> WE
+  YL -> XV
+  RT -> VG
+  RT -> AA
+  MV -> AH
+  MV -> OM
+  WE -> AQ
+  WE -> YL
+  WE -> OM
+  WE -> ZU
+  WE -> EY
+  HN -> OP
+  HN -> XJ
+  UR -> NZ
+  UR -> OY
+  FK -> OY
+  FK -> EF
+  GE -> DF
+  GE -> XE
+  GX -> HF
+  GX -> DY
+  YC -> QC
+  YC -> AH
+  XR -> DY
+  XR -> WT
+  MS -> AA
+  MS -> DR
+  EO -> HF
+  EO -> RC
+  VQ -> NZ
+  VQ -> KO
+  VQ -> EY
+  VQ -> AV
+  VQ -> IH
+  DY -> XR
+  DY -> GX
+  DY -> BL
+  DY -> BG
+  XJ -> QK
+  XJ -> HN
+  XJ -> WT
+  RD -> VG
+  RD -> DP
+  ZU -> VG
+  ZU -> WE
+  AF -> KG
+  AF -> UJ
+  DR -> MS
+  DR -> DP
+  NZ -> VQ
+  NZ -> UR
+  DE -> EF
+  DE -> AH
+  OP -> DP
+  OP -> HN
+  QK -> XJ
+  QK -> RC
+  CF -> PQ
+  FC -> KH
+  FC -> AH
+  KG -> HT
+  KG -> AF
+  KG -> KH
+  KG -> CK
+  XE -> GE
+  OY -> FK
+  OY -> UJ
+  OY -> UR
+  OY -> QC
+  OM -> MV
+  OM -> WE
+  QC -> YC
+  QC -> OY
+  DF -> AH
+  DF -> GE
+  KH -> KG
+  KH -> FC
+  SG -> CK
+  SG -> RU
+  VG -> ZH
+  VG -> ZU
+  VG -> RQ
+  VG -> RD
+  VG -> RT
+  HT -> KG
+  HT -> EF
+  VJ -> IH
+  VJ -> RU
+}
+#+end_src
+
+#+RESULTS:
+[[file:./input.svg]]
