@@ -23,6 +23,8 @@ trait Node{
   val name : String
   val isValve = false
   def asValve : Valve = ???
+  def asChamber : Chamber = ???
+  def index : Int
 }
 
 
@@ -31,9 +33,12 @@ case class Valve( chamber: Chamber ) extends Node{
   override val name = chamber.name + " valve"
   override val isValve = true
   override val asValve = this
+  override val index = chamber.index
 }
 
 class Chamber(override val name:String, val flow:Numero, val neigbours: Seq[String]) extends Node{
+  override def asChamber : Chamber = this
+  
   override val toString = s"Chamber $name flow=$flow to=${neigbours.mkString(",")}"
   val valve = if( flow > 0 ) Valve(this) else null
 
@@ -92,10 +97,10 @@ def dfs(
   volcano: Volcano,
   start: Node,
   remainingTime: Int,
-  openedValves: Set[Valve] = Set(),
+  openedValves: Array[Array[Boolean]],
+  visitedSinceValveOpened: Array[Array[Boolean]],
   currentFlow:Numero = 0,
   flowIncrement:Numero=0,
-  visitedSinceValveOpened: Set[Node] = Set(),
   visited: Seq[Node] = List()
 ) : Numero = {
 
@@ -105,34 +110,45 @@ def dfs(
 
   assert( !start.isInstanceOf[Valve] || !inOpenedValves(start.asInstanceOf[Valve]) )
 
-  def inVisitedSinceValveOpened(n:Node) = visitedSinceValveOpened.contains(n)
-  def inOpenedValves(v:Valve) = openedValves.contains(v)
+  def inVisitedSinceValveOpened(n:Node) = visitedSinceValveOpened(remainingTime)(n.index)
+  def inOpenedValves(v:Valve) = openedValves(remainingTime)(v.index)
 
-  start match{
-    case v: Valve => {
-      // ABRO LA VALVULA Y VUELVO A LA CAMARA
-      return dfs(volcano, v.chamber, remainingTime, openedValves + v, currentFlow, flowIncrement+v.chamber.flow, Set(), visited /* :+ v */ )
+  if( start.isValve ){
+    val v = start.asValve
+    // ABRO LA VALVULA Y VUELVO A LA CAMARA
+    openedValves(remainingTime)(v.index) = true
+    val old = visitedSinceValveOpened(remainingTime)
+    visitedSinceValveOpened(remainingTime) = new Array(visitedSinceValveOpened(remainingTime).size)
+    val ret = dfs(volcano, v.chamber, remainingTime, openedValves,visitedSinceValveOpened, currentFlow, flowIncrement+v.chamber.flow, visited /* :+ v */ )
+    visitedSinceValveOpened(remainingTime) = old
+    return ret
+  }
+  else{
+    val c = start.asChamber
+    val nextFlow = currentFlow + flowIncrement
+
+    /*
+     if( nextFlow > currentMaxFlow ){
+     println( s"flow:$nextFlow on:${start.name} Valves: ${openedValves.map(_.name)} visited:${visited.map(_.name)}")
+     currentMaxFlow = nextFlow
+     }
+     */
+
+
+    val nextVisited = visited /* :+ c */
+    val search = for( n <- c.nodeNeigbours(volcano).toList if !inVisitedSinceValveOpened(n) && ( !n.isValve || !inOpenedValves(n.asValve) ) ) yield {
+
+      System.arraycopy( visitedSinceValveOpened(remainingTime), 0, visitedSinceValveOpened(remainingTime-1), 0, visitedSinceValveOpened(remainingTime).length)
+      visitedSinceValveOpened(remainingTime-1)(n.index) = true
+      System.arraycopy( openedValves(remainingTime), 0, openedValves(remainingTime-1), 0, openedValves(remainingTime).length)
+      
+      dfs(volcano, n, remainingTime-1, openedValves, visitedSinceValveOpened, nextFlow, flowIncrement, nextVisited)
     }
-    case c: Chamber =>{
-      val nextFlow = currentFlow + flowIncrement
-
-      /*
-      if( nextFlow > currentMaxFlow ){
-        println( s"flow:$nextFlow on:${start.name} Valves: ${openedValves.map(_.name)} visited:${visited.map(_.name)}")
-        currentMaxFlow = nextFlow
-      }
-      */
-      val nextVisitedValve = visitedSinceValveOpened + c
-      val nextVisited = visited /* :+ c */
-      val search = for( n <- c.nodeNeigbours(volcano).toList if !inVisitedSinceValveOpened(n) && ( !n.isValve || !inOpenedValves(n.asValve) ) ) yield {
-        dfs(volcano, n, remainingTime-1, openedValves, nextFlow, flowIncrement, nextVisitedValve, nextVisited)
-      }
-      if( search.isEmpty ){
-        return currentFlow
-      }
-      else{
-        return search.max
-      }
+    if( search.isEmpty ){
+      return currentFlow
+    }
+    else{
+      return search.max
     }
   }
 
@@ -144,6 +160,8 @@ val chambers = lines.map( Chamber.fromLine ).toList
 val volcano = new Volcano(chambers)
 
 val solution = LineIterator.time("solution 1"){
-  dfs(volcano, volcano.chamber("AA"), 20)
+  val depth = 20
+  dfs(volcano, volcano.chamber("AA"), depth, Array.fill(depth+1,volcano.chamber.size)(false), Array.fill(depth+1,volcano.chamber.size)(false) )
+  // 1050 para profundidad 20
 }
 println(s"Solution 1:${solution}")
