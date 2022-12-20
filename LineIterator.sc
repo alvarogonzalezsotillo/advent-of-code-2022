@@ -7,7 +7,7 @@ def time[A](name: String)( proc : => A ) = {
   val ini = System.currentTimeMillis()
   val ret = proc
   val end = System.currentTimeMillis()
-  print( s"$name: ${end-ini} millis" )
+  println( s"$name: ${end-ini} millis" )
   ret
 }
 
