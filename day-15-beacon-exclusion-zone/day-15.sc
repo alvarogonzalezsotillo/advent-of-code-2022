@@ -1,3 +1,5 @@
+// -*- mode: scala;coding:utf-8 -*-
+
 import java.io._
 import scala.util._
 import scala.annotation.tailrec
