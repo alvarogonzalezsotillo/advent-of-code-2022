@@ -6,6 +6,9 @@ import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Queue
 import scala.collection.mutable.{Set => MSet,Map => MMap}
+import $ivy.`org.scala-lang.modules:scala-parallel-collections_2.13:1.0.4`
+
+import scala.collection.parallel.CollectionConverters._
 import $file.^.LineIterator
 
 import collection.JavaConverters._
@@ -92,13 +95,13 @@ def dfs( volcano: Volcano, start: Node, remainingTime: Int, openedValves: Set[Va
   start match{
     case v: Valve => {
       // ABRO LA VALVULA Y VUELVO A LA CAMARA
-      return dfs(volcano, v.chamber, remainingTime, openedValves + v, currentFlow, List(), visited :+ v )
+      return dfs(volcano, v.chamber, remainingTime, openedValves + v, currentFlow, List(), visited /* :+ v */ )
     }
     case c: Chamber =>{
       val nextFlow = currentFlow + openedValves.map(_.chamber.flow).sum
       val nextVisitedValve = visitedSinceValveOpened :+c
-      val nextVisited = visited :+ c
-      val search = for( n <- c.nodeNeigbours(volcano) if !visitedSinceValveOpened.contains(n) && ( !n.isValve || !openedValves.contains(n.asValve) ) ) yield {
+      val nextVisited = visited /* :+ c */
+      val search = for( n <- c.nodeNeigbours(volcano).toList if !visitedSinceValveOpened.contains(n) && ( !n.isValve || !openedValves.contains(n.asValve) ) ) yield {
         dfs(volcano, n, remainingTime-1, openedValves, nextFlow, nextVisitedValve, nextVisited)
       }
       if( search.isEmpty ){
@@ -113,7 +116,7 @@ def dfs( volcano: Volcano, start: Node, remainingTime: Int, openedValves: Set[Va
 }
 
 
-val lines = LineIterator.lineIterator( new FileInputStream("sample") )
+val lines = LineIterator.lineIterator( new FileInputStream("input") )
 val chambers = lines.map( Chamber.fromLine ).toList
 val volcano = new Volcano(chambers)
 
