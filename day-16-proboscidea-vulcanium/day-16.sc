@@ -81,19 +81,19 @@ class Volcano( chambersSeq: Seq[Chamber] ){
 var  currentMaxFlow:Numero=0
 
 
-def dfs_memoized(volcano: Volcano,start: Node, time:Int ) : (Int,Seq[Node]) = {
-  case class Key( node: Node, remainingTime:Int, openedValves: Set[Valve] )
-  val memo = MMap[Key,(Int,List[Node])]()
+def dfs_memoized(volcano: Volcano, start: Node, time:Int ) : (Int,Seq[Node],Seq[Node]) = {
+  case class Key( node: Node, elephant: Node, remainingTime:Int, openedValves: Set[Valve] )
+  val memo = MMap[Key,(Int,List[Node],List[Node])]()
 
   var currentMax = 0
 
-  def dfs_memoized_impl( node: Node, remainingTime:Int, openedValves: Set[Valve], visitedSinceValveOpened: Set[Node] ) : (Int,List[Node]) = {
+  def dfs_memoized_impl( node: Node, elephant: Node, remainingTime:Int, openedValves: Set[Valve], visitedSinceValveOpened: Set[Node], visitedSinceValveOpenedEle: Set[Node] ) : (Int,List[Node],List[Node]) = {
 
     if( remainingTime <= 0 ){
-      return (0,List(node))
+      return (0,List(node),List(elephant))
     }
 
-    val key = Key(node,remainingTime,openedValves)
+    val key = Key(node,elephant,remainingTime,openedValves)
 
     memo.get( key ) match{
       case Some(ret) => {
@@ -104,24 +104,36 @@ def dfs_memoized(volcano: Volcano,start: Node, time:Int ) : (Int,Seq[Node]) = {
       case Some(_) | None => {
         val compute = {
 
+          val nextTime =              remainingTime-1
+
+          // PERSON
           val nextOpenedValves =      if(node.isValve) openedValves+node.asValve     else openedValves
           val thisFlow =              if(node.isValve) node.flow * (remainingTime-1) else 0
           val currentNode =           if(node.isValve) node.asValve.chamber          else node
           val nextVisitedSinceValve = if(node.isValve) Set(currentNode)              else visitedSinceValveOpened + node
-          val nextTime =              remainingTime-1
 
-          def visitable(n:Node) = !nextVisitedSinceValve.contains(n) && ( !n.isValve || !nextOpenedValves.contains(n.asValve) )
+          // ELEPHANT
+          val nextOpenedValvesEle =      if(elephant.isValve) nextOpenedValves+elephant.asValve else nextOpenedValves
+          val thisFlowEle =              if(elephant.isValve) elephant.flow * (remainingTime-1) else 0
+          val currentNodeEle =           if(elephant.isValve) elephant.asValve.chamber          else elephant
+          val nextVisitedSinceValveEle = if(elephant.isValve) Set(currentNodeEle)               else visitedSinceValveOpenedEle + elephant
 
-          val search = for( n <- currentNode.nodeNeigbours(volcano) if visitable(n) ) yield{
-            dfs_memoized_impl(n, nextTime, nextOpenedValves, nextVisitedSinceValve )
+          def visitable(n:Node) = !nextVisitedSinceValve.contains(n) && ( !n.isValve || !nextOpenedValvesEle.contains(n.asValve) )
+          def visitableEle(n:Node) = !nextVisitedSinceValveEle.contains(n) && ( !n.isValve || !nextOpenedValvesEle.contains(n.asValve) )
+
+          val search = for(
+            n <- currentNode.nodeNeigbours(volcano)  if visitable(n) ;
+            nEle <- currentNodeEle.nodeNeigbours(volcano)  if visitableEle(nEle) && ( !n.isValve || !nEle.isValve || n != nEle )
+          ) yield{
+            dfs_memoized_impl(n, nEle, nextTime, nextOpenedValvesEle, nextVisitedSinceValve, nextVisitedSinceValveEle )
           }
 
           val ret = if( search.isEmpty ){
-            (0, List())
+            (0, List(),List())
           }
           else{
             val max = search.maxBy(_._1)
-            (max._1+thisFlow, node :: max._2 )
+            (max._1+thisFlow+thisFlowEle, node :: max._2 , elephant :: max._3 )
           }
 
           ret
@@ -139,15 +151,15 @@ def dfs_memoized(volcano: Volcano,start: Node, time:Int ) : (Int,Seq[Node]) = {
     }
   }
 
-  dfs_memoized_impl(start,time+1,Set(),Set())
+  dfs_memoized_impl(start,start, time+1,Set(),Set(),Set())
 }
 
 
-val lines = LineIterator.lineIterator( new FileInputStream("input") )
+val lines = LineIterator.lineIterator( new FileInputStream("sample") )
 val chambers = lines.map( Chamber.fromLine ).toList
 val volcano = new Volcano(chambers)
 
 val solution = LineIterator.time("solution 1"){
-  dfs_memoized(volcano, volcano.chamber("AA"), 30)
+  dfs_memoized(volcano, volcano.chamber("AA"), 26)
 }
-println(s"Solution 1: ${solution._1} ${solution._2.map(_.name)}")
+println(s"Solution 1: ${solution._1}\n${solution._2}\n${solution._3}")
