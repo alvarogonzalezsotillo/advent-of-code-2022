@@ -5,6 +5,7 @@ import scala.util._
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Queue
+import scala.collection.mutable.SortedSet
 import scala.collection.mutable.{Set => MSet,Map => MMap}
 import $file.^.LineIterator
 
@@ -20,13 +21,13 @@ trait Node{
   val name : String
   val isValve = false
   def asValve : Valve = ???
-  def asChamber : Chamber = ???
+  def chamber : Chamber = ???
   val flow : Int
   override def toString = name
 }
 
 
-case class Valve( chamber: Chamber ) extends Node{
+case class Valve( override val chamber: Chamber ) extends Node{
   override def nodeNeigbours(v:Volcano) = Seq(chamber)
   override val name = chamber.name + " valve"
   override val isValve = true
@@ -35,7 +36,7 @@ case class Valve( chamber: Chamber ) extends Node{
 }
 
 class Chamber(override val name:String, val flow:Numero, val neigbours: Seq[String]) extends Node{
-  override def asChamber : Chamber = this
+  override val chamber : Chamber = this
   
   //override val toString = s"Chamber $name to=${neigbours.mkString(",")}"
   val valve = if( flow > 0 ) Valve(this) else null
@@ -74,8 +75,44 @@ def toDot(chambers:Seq[Chamber]) = {
 }
 
 class Volcano( chambersSeq: Seq[Chamber] ){
+  val _distances : MMap[(Chamber,Chamber),Int] = MMap()
   val chamber = chambersSeq.map( c => (c.name, c) ).toMap
   val valves = chambersSeq.map(_.valve).filter(_ != null).toSet
+  def distance( from: Node, to: Node ) = {
+    val key = (from.chamber,to.chamber)
+    _distances.get(key) match{
+      case Some(d) => d
+      case None => {
+        val distances : MMap[Chamber,Int] = MMap()
+        val toVisit : SortedSet[Chamber] = SortedSet()( new Ordering[Chamber]{
+          def compare( n1: Chamber, n2: Chamber ) = distances.getOrElse(n1,0) - distances.getOrElse(n2,0) match{
+            case 0 => n1.hashCode - n2.hashCode
+            case n => n
+          }
+        })
+
+        toVisit += from.chamber
+        distances(from.chamber) = 0
+
+        while( !toVisit.isEmpty && distances.get(to.chamber).isEmpty ){
+          val node = toVisit.firstKey
+          
+          toVisit -= node
+          val d = distances(node)
+          for( n <- node.chamber.nodeNeigbours(this).filter(!_.isValve) ){
+            if( distances.get(n.chamber).isEmpty ){
+              distances(n.chamber) = d+1
+              toVisit += n.chamber
+            }
+          }
+        }
+        val ret = distances(to.chamber)
+        _distances(key) = ret
+        _distances( (key._2, key._1) ) = ret
+        ret
+      }
+    }
+  }
 }
 
 var  currentMaxFlow:Numero=0
@@ -86,6 +123,9 @@ def dfs_memoized(volcano: Volcano, start: Node, time:Int ) : (Int,Seq[Node],Seq[
   val memo = MMap[Key,(Int,List[Node],List[Node])]()
 
   var currentMax = 0
+
+  def possibleFutureFlow_impl( node:Node, elephant: Node, remainingTime:Int, openedValves: Set[Valve]) = {
+  }
 
   def dfs_memoized_impl( node: Node, elephant: Node, remainingTime:Int, openedValves: Set[Valve], visitedSinceValveOpened: Set[Node], visitedSinceValveOpenedEle: Set[Node], flowAccum:Int, flowPerMinute: Int ) : (Int,List[Node],List[Node]) = {
 
@@ -98,13 +138,23 @@ def dfs_memoized(volcano: Volcano, start: Node, time:Int ) : (Int,Seq[Node],Seq[
     assert( node != elephant || !node.isValve || !elephant.isValve )
 
     val closedValves = (volcano.valves -- openedValves)
-    val possibleFutureFlow = closedValves.map(_.flow).sum * (time+1 - remainingTime) + flowAccum
+    val (nearToNode,nearToElphant) = closedValves.partition( n => volcano.distance(n,node) <= volcano.distance(n,elephant) )
 
-    if( possibleFutureFlow < currentMax ){
+    val possibleFutureFlow = nearToNode.map( n => (1+remainingTime - volcano.distance(n,node))  * n.flow ).filter( _ > 0).sum +
+        nearToElphant.map( n => (1+remainingTime - volcano.distance(n,node))  * n.flow ).filter( _ > 0).sum
+
+    if( possibleFutureFlow + flowAccum + flowPerMinute*remainingTime < currentMax ){
       println( "No se puede superar el currentMax")
-      println( s"currentMax:$currentMax")
-      println( s"closedValves:$closedValves")
-      println( s"possibleFutureFlow:$possibleFutureFlow")
+      println( s"  node:$node elephant:$elephant")
+      println( s"  openedValves: $openedValves")
+      println( s"  closedValves: $closedValves")
+      println( s"  nearToNode:$nearToNode")
+      println( s"  nearToElphant:$nearToElphant")
+      println( s"  currentMax:$currentMax")
+      println( s"  possibleFutureFlow:$possibleFutureFlow")
+      println( s"  flowAccum:$flowAccum")
+      println( s"  flowPerMinute:$flowPerMinute")
+      println( s"  remainingTime:$remainingTime")
       return (0,List(),List())
     }
 
@@ -172,7 +222,12 @@ val lines = LineIterator.lineIterator( new FileInputStream("input") )
 val chambers = lines.map( Chamber.fromLine ).toList
 val volcano = new Volcano(chambers)
 
+for( c1 <- chambers ; c2 <- chambers ){
+  //println( s"---- $c1 a $c2: ${volcano.distance(c1,c2)}")
+}
+
+
 val solution = LineIterator.time("solution 1"){
-  dfs_memoized(volcano, volcano.chamber("AA"), 15)
+  dfs_memoized(volcano, volcano.chamber("AA"), 26)
 }
 println(s"Solution 1: ${solution._1}\n${solution._2}\n${solution._3}")
